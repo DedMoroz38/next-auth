@@ -1,11 +1,10 @@
 'use client'
 
 import { useForm } from 'react-hook-form'
-import { signIn } from 'next-auth/react'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 
-type LoginFormFields = {
+type RegisterFormFields = {
   email: string;
   password: string;
 }
@@ -31,12 +30,16 @@ export default function SignIn() {
     resolver: yupResolver(schema),
   })
 
-  const onSubmit = async (data: LoginFormFields) => {
-    const r = await signIn('credentials', {redirect: false, callbackUrl: undefined, ...data})
+  const onSubmit = async (data: RegisterFormFields) => {
+    const res = await fetch('http://localhost:3000/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+    })
 
-    if (!r) return;
+    if (!res) return;
 
-    if (r?.status === 401) {
+    if (res?.status === 401) {
       setError('email', {message: 'Incorrect email'})
       setError('password', {message: 'Incorrect password'})
     }
@@ -57,7 +60,7 @@ export default function SignIn() {
     <div className="font-[sans-serif]">
       <div className="min-h-screen flex fle-col items-center justify-center py-6 px-4">
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto">
-          <h3 className="text-gray-800 text-3xl font-extrabold mb-8">Sign in</h3>
+          <h3 className="text-gray-800 text-3xl font-extrabold mb-8">Registration</h3>
           <div className="space-y-4">
             <div>
               {errors.email && <p className="text-red">{errors.email.message}</p>}
@@ -84,7 +87,7 @@ export default function SignIn() {
               type="submit"
               className="w-full shadow-xl py-2.5 px-4 text-sm font-semibold rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
             >
-              Log in
+              Register
             </button>
           </div>
 

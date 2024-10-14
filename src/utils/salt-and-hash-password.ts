@@ -6,3 +6,7 @@ export const saltAndHashPassword = (plainPassword: string) => {
 
   return encryptedPassword
 }
+
+export const comparePassword = (plainPassword: string, hashedPassword: string) => {
+  return bcrypt.compareSync(plainPassword, hashedPassword)
+}

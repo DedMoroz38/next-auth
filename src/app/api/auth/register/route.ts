@@ -1,16 +1,21 @@
 import prisma from "@/db";
-import {NextApiRequest, NextApiResponse} from "next";
+import { NextResponse } from "next/server";
+import { saltAndHashPassword } from '@/utils/salt-and-hash-password'
 
-export async function POST(req: NextApiRequest, res: NextApiResponse) {
-    const user = prisma.user.create({
+export async function POST(req: Request) {
+    const body = await req.json();
+    const hashedPassword = saltAndHashPassword(body.password)
+
+    const user = await prisma.user.create({
         data: {
-            email: req.body.email,
-            password: req.body.password
+            email: body.email,
+            password: hashedPassword
         }
-    })
+    });
+
     if (!user) {
-        res.status(401).json({ message: 'Invalid credentials' })
-        return
+        return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
-    res.status(200).json({ message: 'success' })
+
+    return NextResponse.json({ message: 'success' }, { status: 200 });
 }

@@ -1,16 +1,36 @@
-import prisma from "@/db";
-import {NextApiRequest, NextApiResponse} from "next";
+import prisma from '@/db'
+import { comparePassword } from '@/utils/salt-and-hash-password'
+import { NextResponse } from 'next/server'
+import { generateAccessToken } from '@/utils/token-generate'
 
-export async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const user = prisma.user.findFirst({
+export async function POST(req: Request) {
+  const body = await req.json()
+  let arePasswordsEqual
+
+  const user = await prisma.user.findFirst({
     where: {
-      email: req.body.email,
-      password: req.body.password
-    }
+      email: body.email,
+    },
+    select: {
+      password: true,
+      id: true,
+    },
   })
-  if (!user) {
-    res.status(401).json({ message: 'Invalid credentials' })
-    return
+
+  if (user.password) arePasswordsEqual = comparePassword(body.password, user!.password)
+
+  if (!user || !arePasswordsEqual) {
+    return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
   }
-  res.status(200).json({ message: 'success' })
+
+  const accessToken = generateAccessToken({ id: user.id })
+  const refreshToken = generateAccessToken({ id: user.id })
+
+  return NextResponse.json({
+    message: 'success', data: {
+      id: user.id,
+      accessToken,
+      refreshToken,
+    },
+  }, { status: 200 })
 }
