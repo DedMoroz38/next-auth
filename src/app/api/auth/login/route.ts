@@ -1,7 +1,7 @@
 import prisma from '@/db'
 import { comparePassword } from '@/utils/salt-and-hash-password'
 import { NextResponse } from 'next/server'
-import { generateAccessToken } from '@/utils/token-generate'
+import { generateAccessToken, generateRefreshToken } from '@/utils/token-generate'
 
 export async function POST(req: Request) {
   const body = await req.json()
@@ -17,14 +17,14 @@ export async function POST(req: Request) {
     },
   })
 
-  if (user.password) arePasswordsEqual = comparePassword(body.password, user!.password)
+  if (user && user.password) arePasswordsEqual = comparePassword(body.password, user!.password)
 
   if (!user || !arePasswordsEqual) {
     return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
   }
 
-  const accessToken = generateAccessToken({ id: user.id })
-  const refreshToken = generateAccessToken({ id: user.id })
+  const accessToken = generateAccessToken({ id: String(user.id) })
+  const refreshToken = generateRefreshToken({ id: String(user.id) })
 
   return NextResponse.json({
     message: 'success', data: {

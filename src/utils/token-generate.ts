@@ -1,18 +1,27 @@
-import { sign } from 'jsonwebtoken'
+import { sign, verify } from 'jsonwebtoken'
 
 export const generateAccessToken = (payload: {
-  id: number;
+  id: string;
 }) => {
-  return sign(payload, process.env.JWT_ACCESS_SECRET!, {
+  return sign(payload, process.env.NEXT_PUBLIC_ACCESS_TOKEN_SECRET!, {
     algorithm: 'HS512',
     expiresIn: 300,
   })
 }
 
 export const generateRefreshToken = (payload: {
-  id: number;
+  id: string;
 }) => {
-  return sign(payload, process.env.JWT_REFRESH_SECRET!, {
+  return sign(payload, process.env.NEXT_PUBLIC_REFRESH_TOKEN_SECRET!, {
     algorithm: 'HS512',
     expiresIn: 60 * 60 * 24,
-  })}
+  })
+}
+
+export const validateRefreshToken = (token: string) => {
+  return verify(token, process.env.NEXT_PUBLIC_REFRESH_TOKEN_SECRET!)
+}
+
+export const validateAccessToken = (token: string) => {
+  return verify(token, process.env.NEXT_PUBLIC_ACCESS_TOKEN_SECRET!)
+}
