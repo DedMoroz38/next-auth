@@ -2,8 +2,10 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GitHubProvider from 'next-auth/providers/github'
 import { decode } from 'jsonwebtoken'
-import { generateAccessToken, validateAndReturnRefreshToken } from '@/utils/token-generate'
-import { checkIfUserExistsAndCreate } from '@/app/prisma/user/create-user'
+import { generateAccessToken, generateRefreshToken, validateAndReturnRefreshToken } from '@/utils/token-generate'
+import prisma from '@/db'
+import { comparePassword } from '@/utils/salt-and-hash-password'
+import { NextResponse } from 'next/server'
 
 const tokenExpiresIn = (token: string) => {
   const decoded = decode(token, { json: true })
@@ -49,7 +51,6 @@ export const authOptions = {
 
       if (accessETA < 30) {
         try {
-          console.log('refreshed token')
           const { sub } = validateAndReturnRefreshToken(refreshToken)
           token.accessToken = generateAccessToken({ id: sub })
         } catch {
@@ -61,7 +62,7 @@ export const authOptions = {
       token.refreshToken = refreshToken
       token.isAuthorized = isAuthorized
 
-      if (!isAuthorized){
+      if (!isAuthorized) {
         return null
       }
 
@@ -81,17 +82,32 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
-          const res = await fetch('http://localhost:3000/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify(credentials),
-            headers: { 'Content-Type': 'application/json' },
+          let arePasswordsEqual
+          if (!credentials) return Promise.resolve(null)
+
+          const user = await prisma.user.findFirst({
+            where: {
+              email: credentials.email,
+            },
+            select: {
+              password: true,
+              id: true,
+            },
           })
-          const rJson = await res.json()
+
+          if (user && user.password) arePasswordsEqual = comparePassword(credentials.password, user!.password)
+
+          if (!user || !arePasswordsEqual) {
+            return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
+          }
+
+          const accessToken = generateAccessToken({ id: String(user.id) })
+          const refreshToken = generateRefreshToken({ id: String(user.id) })
 
           return {
-            id: rJson.data.id,
-            accessToken: rJson.data.accessToken,
-            refreshToken: rJson.data.refreshToken,
+            id: user.id,
+            accessToken,
+            refreshToken,
           }
         } catch {
           return Promise.resolve(null)
