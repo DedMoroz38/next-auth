@@ -18,10 +18,10 @@ export const generateRefreshToken = (payload: {
   })
 }
 
-export const validateRefreshToken = (token: string) => {
+export const validateAndReturnRefreshToken = (token: string) => {
   return verify(token, process.env.NEXT_PUBLIC_REFRESH_TOKEN_SECRET!)
 }
 
-export const validateAccessToken = (token: string) => {
+export const validateAndReturnAccessToken = (token: string) => {
   return verify(token, process.env.NEXT_PUBLIC_ACCESS_TOKEN_SECRET!)
 }
